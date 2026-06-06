@@ -1,0 +1,79 @@
+# Import required libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv("car_data.csv")
+
+# Display first 5 rows
+print(df.head())
+
+# Check dataset information
+print(df.info())
+
+# Check missing values
+print(df.isnull().sum())
+
+# Remove missing values
+df.dropna(inplace=True)
+
+# Convert categorical columns into numerical values
+le = LabelEncoder()
+
+for col in df.select_dtypes(include=['object']).columns:
+    df[col] = le.fit_transform(df[col])
+
+# Define features and target variable
+X = df.drop("Selling_Price", axis=1)
+y = df["Selling_Price"]
+
+# Split dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Train model
+model = RandomForestRegressor(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Model Evaluation
+print("MAE:", mean_absolute_error(y_test, y_pred))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred)))
+print("R² Score:", r2_score(y_test, y_pred))
+
+# Feature Importance
+importance = model.feature_importances_
+
+feature_df = pd.DataFrame({
+    'Feature': X.columns,
+    'Importance': importance
+}).sort_values(by='Importance', ascending=False)
+
+print(feature_df)
+
+# Plot Feature Importance
+plt.figure(figsize=(10,5))
+plt.bar(feature_df['Feature'], feature_df['Importance'])
+plt.xticks(rotation=45)
+plt.title("Feature Importance")
+plt.show()
+
+# Actual vs Predicted Prices
+plt.figure(figsize=(8,6))
+plt.scatter(y_test, y_pred)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title("Actual vs Predicted Car Prices")
+plt.show()
